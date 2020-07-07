@@ -205,26 +205,43 @@ layui.define('layer' , function(exports){
         });
         
         //提交文件
-        $.ajax({
+        var opts = {
           url: options.url
-          ,type: 'post'
+          ,type: 'post' //统一采用 post 上传
           ,data: formData
           ,contentType: false 
           ,processData: false
           ,dataType: 'json'
           ,headers: options.headers || {}
+          //成功回调
           ,success: function(res){
             successful++;
             done(index, res);
             allDone();
           }
+          //异常回调
           ,error: function(){
             aborted++;
             that.msg('请求上传接口出现异常');
             error(index);
             allDone();
           }
-        });
+        };
+        //监听进度条
+        if(typeof options.progress === 'function'){
+          opts.xhr = function(){
+            var xhr = $.ajaxSettings.xhr();
+            //监听上传进度
+            xhr.upload.addEventListener("progress", function (e) {
+              if(e.lengthComputable) {
+                var percent = Math.floor((e.loaded/e.total)* 100); //百分比
+                options.progress(percent, options.item[0], e);
+              }
+            });
+            return xhr;
+          }
+        }
+        $.ajax(opts);
       });
     }
     
